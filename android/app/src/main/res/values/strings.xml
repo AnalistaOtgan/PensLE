@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PensLE</string>
+    <string name="title_activity_main">PensLE</string>
+    <string name="package_name">com.otgan.pensle</string>
+    <string name="custom_url_scheme">com.otgan.pensle</string>
+</resources>

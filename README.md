@@ -46,10 +46,10 @@ A configuração inicial está em `capacitor.config.ts` com:
 Próximos passos naturais para Android:
 
 ```bash
-npm install @capacitor/android
-npx cap add android
-npm run build
-npx cap sync android
+npm run android:sync
+npm run android:open
 ```
+
+O projeto Android nativo fica em `android/`. A permissão de microfone (`RECORD_AUDIO`) já está no `AndroidManifest.xml`.
 
 Depois disso, substituir a camada `BrowserStorageService` por SQLite + Filesystem mantendo a mesma interface de serviços.

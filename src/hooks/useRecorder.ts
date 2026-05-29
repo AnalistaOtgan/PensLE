@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { audioService, type RecordingResult } from '../services/audioService';
+import { audioService, type RecordingResult, type RecordingSession } from '../services/audioService';
 
 export function useRecorder() {
-  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recorderRef = useRef<RecordingSession | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -42,18 +42,7 @@ export function useRecorder() {
     setIsRecording(false);
     recorderRef.current = null;
 
-    const result = await new Promise<RecordingResult>((resolve) => {
-      recorder.addEventListener(
-        'stop',
-        () => {
-          recorder.stream.getTracks().forEach((track) => track.stop());
-          const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-          resolve({ blob, url: URL.createObjectURL(blob) });
-        },
-        { once: true }
-      );
-      recorder.stop();
-    });
+    const result = await recorder.stop();
 
     return result;
   };
