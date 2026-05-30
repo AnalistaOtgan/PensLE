@@ -397,16 +397,16 @@ a {
 
 .tag-chip {
   min-height: 32px;
-  border: 1px solid color-mix(in srgb, var(--tag-color) 64%, var(--md-outline-variant));
+  border: 1px solid var(--md-outline-variant);
   border-radius: var(--shape-sm);
   display: inline-flex;
   align-items: center;
   padding: 0 12px;
-  color: var(--md-on-surface);
-  background: color-mix(in srgb, var(--tag-color) 14%, var(--md-surface-container-low));
+  color: var(--md-on-surface-variant);
+  background: var(--md-surface-container-lowest);
   font-size: 0.82rem;
   font-weight: 500;
-  transition: transform var(--motion-standard), background var(--motion-standard);
+  transition: transform var(--motion-standard), background var(--motion-standard), border-color var(--motion-standard), color var(--motion-standard);
 }
 
 button.tag-chip {
@@ -414,8 +414,9 @@ button.tag-chip {
 }
 
 .tag-chip.active {
-  background: color-mix(in srgb, var(--tag-color) 72%, var(--md-primary-container));
-  color: white;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: var(--md-secondary-container);
 }
 
 .tag-chip:active {
@@ -515,11 +516,22 @@ button:disabled {
   background: transparent;
 }
 
-.danger-button,
-.icon-button.danger {
+.danger-button {
   border: 1px solid var(--md-outline);
   color: var(--md-error);
   background: transparent;
+}
+
+.icon-button.danger {
+  border: 1px solid transparent;
+  color: var(--md-on-surface-variant);
+  background: transparent;
+}
+
+.icon-button.danger:hover,
+.icon-button.danger:active {
+  color: var(--md-error);
+  background: color-mix(in srgb, var(--md-error) 12%, transparent);
 }
 
 .wide {
@@ -871,6 +883,28 @@ button:disabled {
   border-radius: var(--shape-md);
   color: var(--md-on-surface-variant);
   background: var(--md-surface-container);
+}
+
+.inline-status.danger {
+  color: var(--md-error);
+  border-color: var(--md-error);
+}
+
+.export-result {
+  display: grid;
+  gap: 10px;
+}
+
+.export-json {
+  width: 100%;
+  min-height: 168px;
+  padding: 12px 14px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--shape-xs);
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-lowest);
+  font: 0.86rem/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  resize: vertical;
 }
 
 @media (min-width: 780px) {

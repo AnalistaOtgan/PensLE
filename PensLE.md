@@ -1,11 +1,3 @@
-Aqui está o prompt completo e detalhado:
-
----
-
-## 🎙️ PROMPT — PensLE: Aplicativo de Captura de Pensamentos com IA
-
----
-
 # PensLE — Aplicativo React + Capacitor (Android) para Captura de Pensamentos
 
 ## VISÃO GERAL DO PROJETO

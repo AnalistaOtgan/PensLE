@@ -6,8 +6,12 @@ interface StoredState {
   settings: AppSettings;
 }
 
+const buildGroqApiKey = import.meta.env.DEV
+  ? (import.meta.env.VITE_GROQ_API_KEY || import.meta.env.API_KEY_GROQ || '').trim()
+  : '';
+
 const defaultSettings: AppSettings = {
-  groqApiKey: '',
+  groqApiKey: buildGroqApiKey,
   language: 'pt',
   keepAudio: true,
   model: 'llama-3.1-8b-instant',
@@ -19,6 +23,16 @@ const createEmptyState = (): StoredState => ({
   connections: [],
   settings: defaultSettings
 });
+
+const mergeSettings = (settings?: Partial<AppSettings>): AppSettings => {
+  const merged = { ...defaultSettings, ...(settings ?? {}) };
+
+  if (!merged.groqApiKey.trim() && defaultSettings.groqApiKey) {
+    merged.groqApiKey = defaultSettings.groqApiKey;
+  }
+
+  return merged;
+};
 
 export class BrowserStorageService {
   private readonly key: string;
@@ -110,7 +124,7 @@ export class BrowserStorageService {
       return {
         notes: parsed.notes ?? [],
         connections: parsed.connections ?? [],
-        settings: { ...defaultSettings, ...(parsed.settings ?? {}) }
+        settings: mergeSettings(parsed.settings)
       };
     } catch {
       return createEmptyState();

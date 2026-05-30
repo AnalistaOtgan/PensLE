@@ -1,11 +1,13 @@
 import { Download, Moon, Sun, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { exportNotes, type ExportResult } from '../services/exportService';
 import { defaultSettings, storageService } from '../services/storageService';
 import type { AppSettings } from '../types';
 
 export function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [saved, setSaved] = useState(false);
+  const [exportResult, setExportResult] = useState<ExportResult | null>(null);
 
   useEffect(() => {
     void storageService.getSettings().then(setSettings);
@@ -21,14 +23,29 @@ export function SettingsPage() {
 
   const exportVault = async () => {
     const notes = await storageService.getAllNotes();
-    const content = JSON.stringify(notes, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'pensle-notas.json';
-    anchor.click();
-    URL.revokeObjectURL(url);
+    setExportResult(await exportNotes(notes));
+  };
+
+  const copyExportJson = async () => {
+    if (!exportResult) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(exportResult.content);
+      setExportResult({
+        mode: 'copied',
+        content: exportResult.content,
+        message: 'JSON copiado para a area de transferencia.'
+      });
+    } catch {
+      setExportResult({
+        mode: 'copy-fallback',
+        content: exportResult.content,
+        message: 'JSON pronto para copiar.',
+        error: 'Nao foi possivel copiar automaticamente.'
+      });
+    }
   };
 
   const clearVault = async () => {
@@ -98,6 +115,20 @@ export function SettingsPage() {
           <Download size={18} />
           Exportar notas
         </button>
+        {exportResult && (
+          <div className="export-result">
+            <p className="inline-status">{exportResult.message}</p>
+            {exportResult.mode === 'copy-fallback' && (
+              <>
+                <p className="inline-status danger">{exportResult.error}</p>
+                <textarea className="export-json" value={exportResult.content} readOnly />
+                <button className="secondary-button wide" onClick={copyExportJson}>
+                  Copiar JSON
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <button className="danger-button wide" onClick={clearVault}>
           <Trash2 size={18} />
           Limpar dados locais

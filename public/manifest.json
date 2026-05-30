@@ -1,0 +1,17 @@
+{
+  "name": "PensLE",
+  "short_name": "PensLE",
+  "description": "Aplicativo de Captura de Pensamentos com IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+def hasReleaseSigning = project.hasProperty('PENSLE_RELEASE_STORE_FILE') &&
+    project.hasProperty('PENSLE_RELEASE_STORE_PASSWORD') &&
+    project.hasProperty('PENSLE_RELEASE_KEY_ALIAS') &&
+    project.hasProperty('PENSLE_RELEASE_KEY_PASSWORD')
+
 android {
     namespace "com.otgan.pensle"
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -16,9 +21,22 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        releaseTest {
+            if (hasReleaseSigning) {
+                storeFile file(PENSLE_RELEASE_STORE_FILE)
+                storePassword PENSLE_RELEASE_STORE_PASSWORD
+                keyAlias PENSLE_RELEASE_KEY_ALIAS
+                keyPassword PENSLE_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.releaseTest
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
