@@ -1,3 +1,4 @@
+import { get, set, del } from 'idb-keyval';
 import type { AppSettings, Connection, Note, NoteSummary } from '../types';
 
 interface StoredState {
@@ -42,7 +43,8 @@ export class BrowserStorageService {
   }
 
   async getAllNotes(): Promise<Note[]> {
-    return this.read().notes.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const state = await this.read();
+    return state.notes.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getAllNotesSummaries(): Promise<NoteSummary[]> {
@@ -57,15 +59,17 @@ export class BrowserStorageService {
   }
 
   async getNote(id: string): Promise<Note | undefined> {
-    return this.read().notes.find((note) => note.id === id);
+    const state = await this.read();
+    return state.notes.find((note) => note.id === id);
   }
 
   async getConnections(): Promise<Connection[]> {
-    return this.read().connections;
+    const state = await this.read();
+    return state.connections;
   }
 
   async saveNote(note: Note, connections: Connection[]): Promise<void> {
-    const state = this.read();
+    const state = await this.read();
     const notes = state.notes.filter((saved) => saved.id !== note.id);
     const existingConnectionKeys = new Set(
       state.connections.map((connection) =>
@@ -82,7 +86,7 @@ export class BrowserStorageService {
       }
     });
 
-    this.write({
+    await this.write({
       ...state,
       notes: [note, ...notes],
       connections: nextConnections
@@ -90,8 +94,8 @@ export class BrowserStorageService {
   }
 
   async deleteNote(id: string): Promise<void> {
-    const state = this.read();
-    this.write({
+    const state = await this.read();
+    await this.write({
       ...state,
       notes: state.notes.filter((note) => note.id !== id),
       connections: state.connections.filter(
@@ -101,38 +105,52 @@ export class BrowserStorageService {
   }
 
   async getSettings(): Promise<AppSettings> {
-    return this.read().settings;
+    const state = await this.read();
+    return state.settings;
   }
 
   async saveSettings(settings: AppSettings): Promise<void> {
-    const state = this.read();
-    this.write({ ...state, settings });
+    const state = await this.read();
+    await this.write({ ...state, settings });
   }
 
   async clear(): Promise<void> {
     localStorage.removeItem(this.key);
+    await del(this.key);
   }
 
-  private read(): StoredState {
-    const raw = localStorage.getItem(this.key);
-    if (!raw) {
+  private async read(): Promise<StoredState> {
+    let state = await get<Partial<StoredState>>(this.key);
+    
+    if (!state) {
+      const raw = localStorage.getItem(this.key);
+      if (raw) {
+        try {
+          state = JSON.parse(raw) as Partial<StoredState>;
+          await set(this.key, state);
+          localStorage.removeItem(this.key);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!state) {
       return createEmptyState();
     }
 
-    try {
-      const parsed = JSON.parse(raw) as Partial<StoredState>;
-      return {
-        notes: parsed.notes ?? [],
-        connections: parsed.connections ?? [],
-        settings: mergeSettings(parsed.settings)
-      };
-    } catch {
-      return createEmptyState();
-    }
+    return {
+      notes: (state.notes ?? []).map(note => ({
+        ...note,
+        tags: note.tags ?? []
+      })),
+      connections: state.connections ?? [],
+      settings: mergeSettings(state.settings)
+    };
   }
 
-  private write(state: StoredState): void {
-    localStorage.setItem(this.key, JSON.stringify(state));
+  private async write(state: StoredState): Promise<void> {
+    await set(this.key, state);
   }
 }
 

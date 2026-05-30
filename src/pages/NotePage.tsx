@@ -1,10 +1,10 @@
-import { ArrowLeft, Loader2, Share2, Sparkles, Volume2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, Copy, Loader2, Pause, Share2, Sparkles, Volume2, Plus } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Link, useParams } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
 import { TagChip } from '../components/TagChip';
-import { markdownForDisplay } from '../services/markdownService';
+import { markdownForDisplay, createMarkdownDocument } from '../services/markdownService';
 import { canProcessNoteLater, hasUsableRawTranscript, processSavedNote } from '../services/notePipeline';
 import { storageService } from '../services/storageService';
 import type { Connection, Note } from '../types';
@@ -16,6 +16,8 @@ export function NotePage() {
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagValue, setNewTagValue] = useState('');
 
   const load = async () => {
       if (!id) {
@@ -34,6 +36,25 @@ export function NotePage() {
   useEffect(() => {
     void load();
   }, [id]);
+
+  const audioHref = note?.audioDataUrl;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  useEffect(() => {
+    if (audioHref) {
+      const audio = new Audio(audioHref);
+      audio.onended = () => setIsPlayingAudio(false);
+      audio.onpause = () => setIsPlayingAudio(false);
+      audio.onplay = () => setIsPlayingAudio(true);
+      audioRef.current = audio;
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, [audioHref]);
 
   if (!note) {
     return (
@@ -59,11 +80,64 @@ export function NotePage() {
     }))
     .filter((item) => item.target);
 
+  const availableTags = Array.from(new Set(allNotes.flatMap(n => n.tags))).sort();
+
+  const handleAddTag = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!note || !newTagValue.trim()) {
+      setIsAddingTag(false);
+      return;
+    }
+    
+    const tagsToAdd = newTagValue.split(',').map(t => 
+      t.trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    ).filter(Boolean);
+
+    const newTags = Array.from(new Set([...note.tags, ...tagsToAdd]));
+    
+    if (newTags.length > note.tags.length) {
+      const updatedNote: Note = {
+        ...note,
+        tags: newTags,
+      };
+      
+      updatedNote.markdown = createMarkdownDocument({
+        title: updatedNote.title,
+        summary: updatedNote.summary,
+        tags: updatedNote.tags,
+        createdAt: updatedNote.createdAt,
+        treatedBody: updatedNote.body,
+        rawTranscript: updatedNote.rawTranscript
+      });
+      
+      setNote(updatedNote);
+      await storageService.saveNote(updatedNote, []);
+      await load();
+    }
+    
+    setNewTagValue('');
+    setIsAddingTag(false);
+  };
+
   const share = async () => {
     await navigator.clipboard?.writeText(note.markdown ?? note.body);
   };
-  const audioHref = note.audioDataUrl;
   const hasLegacyTemporaryAudio = Boolean(!note.audioDataUrl && note.audioUrl);
+
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+      } else {
+        void audioRef.current.play();
+      }
+    }
+  };
 
   const processLater = async () => {
     setProcessing(true);
@@ -91,9 +165,9 @@ export function NotePage() {
         </Link>
         <div className="note-actions">
           {audioHref && (
-            <a className="icon-action" href={audioHref} target="_blank" rel="noreferrer" aria-label="Ouvir áudio">
-              <Volume2 size={18} />
-            </a>
+            <button className="icon-action" onClick={toggleAudio} aria-label={isPlayingAudio ? "Pausar áudio" : "Ouvir áudio"}>
+              {isPlayingAudio ? <Pause size={18} /> : <Volume2 size={18} />}
+            </button>
           )}
           {canProcessNoteLater(note) && (
             <button className="reader-process-button" onClick={processLater} disabled={processing}>
@@ -109,11 +183,39 @@ export function NotePage() {
 
       <section className="reader-meta">
         <h1>{note.title}</h1>
-        <p>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(note.createdAt))}</p>
+        <p>{new Date(note.createdAt).toLocaleString('pt-BR')}</p>
         <div className="card-tags">
           {note.tags.map((tag) => (
             <TagChip key={tag} tag={tag} />
           ))}
+          {isAddingTag ? (
+            <form onSubmit={handleAddTag} className="add-tag-form">
+              <input
+                type="text"
+                value={newTagValue}
+                onChange={(e) => setNewTagValue(e.target.value)}
+                placeholder="tag1, tag2"
+                autoFocus
+                onBlur={() => handleAddTag()}
+                list="available-tags"
+                className="add-tag-input"
+              />
+              <datalist id="available-tags">
+                {availableTags.map(tag => (
+                  <option key={tag} value={tag} />
+                ))}
+              </datalist>
+            </form>
+          ) : (
+            <button 
+              className="tag-chip add-tag-button"
+              onClick={() => setIsAddingTag(true)}
+              aria-label="Adicionar tag"
+              title="Adicionar tag"
+            >
+              <Plus size={14} />
+            </button>
+          )}
         </div>
         {status && <p className="inline-status">{status}</p>}
         {hasLegacyTemporaryAudio && !canProcessNoteLater(note) && (
@@ -124,7 +226,35 @@ export function NotePage() {
       </section>
 
       <div className="markdown-body reader-markdown">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdownForDisplay(note.markdown ?? note.body)}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h2: ({ node, children, ...props }) => {
+              const text = Array.isArray(children)
+                ? children.map((c) => (typeof c === 'string' ? c : '')).join('')
+                : String(children);
+              
+              if (text.includes('Pensamento tratado')) {
+                return (
+                  <h2 {...props} className="section-title-with-copy">
+                    {children}
+                    <button
+                      className="copy-section-button"
+                      onClick={() => navigator.clipboard?.writeText(note.body)}
+                      aria-label="Copiar Pensamento"
+                      title="Copiar Pensamento"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </h2>
+                );
+              }
+              return <h2 {...props}>{children}</h2>;
+            }
+          }}
+        >
+          {markdownForDisplay(note.markdown ?? note.body)}
+        </ReactMarkdown>
       </div>
 
       <section className="connections-list reader-connections">

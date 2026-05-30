@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react';
 import { exportNotes, type ExportResult } from '../services/exportService';
 import { defaultSettings, storageService } from '../services/storageService';
 import type { AppSettings } from '../types';
+import { useDialog } from '../components/ui/DialogContext';
+import { Dropdown } from '../components/ui/Dropdown';
 
 export function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [saved, setSaved] = useState(false);
   const [exportResult, setExportResult] = useState<ExportResult | null>(null);
+  const dialog = useDialog();
 
   useEffect(() => {
     void storageService.getSettings().then(setSettings);
@@ -49,7 +52,8 @@ export function SettingsPage() {
   };
 
   const clearVault = async () => {
-    if (!window.confirm('Limpar todas as notas, conexões e ajustes locais?')) {
+    const confirmed = await dialog.confirm('Limpar todas as notas, conexões e ajustes locais?');
+    if (!confirmed) {
       return;
     }
     await storageService.clear();
@@ -74,21 +78,29 @@ export function SettingsPage() {
           />
         </label>
 
-        <label className="field">
+        <label className="field dropdown-field">
           <span>Idioma da transcrição</span>
-          <select value={settings.language} onChange={(event) => update({ ...settings, language: event.target.value as AppSettings['language'] })}>
-            <option value="pt">Português</option>
-            <option value="en">Inglês</option>
-            <option value="auto">Auto-detectar</option>
-          </select>
+          <Dropdown
+            value={settings.language}
+            options={[
+              { label: 'Português', value: 'pt' },
+              { label: 'Inglês', value: 'en' },
+              { label: 'Auto-detectar', value: 'auto' }
+            ]}
+            onChange={(value) => update({ ...settings, language: value as AppSettings['language'] })}
+          />
         </label>
 
-        <label className="field">
+        <label className="field dropdown-field">
           <span>Modelo de interpretação</span>
-          <select value={settings.model} onChange={(event) => update({ ...settings, model: event.target.value as AppSettings['model'] })}>
-            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-          </select>
+          <Dropdown
+            value={settings.model}
+            options={[
+              { label: 'llama-3.1-8b-instant', value: 'llama-3.1-8b-instant' },
+              { label: 'llama-3.3-70b-versatile', value: 'llama-3.3-70b-versatile' }
+            ]}
+            onChange={(value) => update({ ...settings, model: value as AppSettings['model'] })}
+          />
         </label>
 
         <div className="segmented">

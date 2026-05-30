@@ -50,6 +50,12 @@ export function CapturePage() {
 
   return (
     <section className="capture-page">
+      <div className="capture-bg-animation">
+        <div className="capture-bg-logo"></div>
+        <div className="capture-bg-aurora capture-bg-aurora-1"></div>
+        <div className="capture-bg-aurora capture-bg-aurora-2"></div>
+      </div>
+      
       <header className="page-heading compact">
         <p>PensLE</p>
         <h1>Capturar</h1>

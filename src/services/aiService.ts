@@ -10,7 +10,8 @@ Tarefas:
 
 Regras criticas:
 - Preserve o idioma, intencao e nivel de certeza da pessoa.
-- Nao invente fatos, tags, projetos, pessoas ou conexoes.
+- Use as notas fornecidas no contexto para identificar se o usuario esta se referindo a uma situacao ou problema continuo.
+- Nao invente fatos, projetos ou pessoas.
 - Separe mentalmente a transcricao bruta da versao tratada: o campo "body" deve ser a versao organizada, nao uma copia literal.
 - Conecte apenas quando houver relacao semantica clara: mesmo tema, pessoa, projeto, conceito, decisao, causa ou continuidade direta.
 - Prefira retornar connections: [] a criar conexoes fracas.
@@ -37,7 +38,8 @@ Formato:
 Tags:
 - 2 a 6 tags.
 - Minusculas, sem espacos, use hifen.
-- Use tags que realmente descrevam o conteudo.
+- Priorize FORTEMENTE a reutilizacao das tags que ja existem no contexto fornecido.
+- Nao crie novas tags aleatorias se o assunto for o mesmo de notas anteriores.
 
 Markdown:
 - Use headers quando houver mais de uma ideia.

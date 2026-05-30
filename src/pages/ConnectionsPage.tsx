@@ -49,18 +49,58 @@ export function ConnectionsPage() {
             onNodeClick={(node) => navigate(`/notas/${(node as GraphNode).id}`)}
             nodeCanvasObject={(node, ctx, globalScale) => {
               const graphNode = node as GraphNode & { x?: number; y?: number };
-              const label = graphNode.title.length > 16 ? `${graphNode.title.slice(0, 16)}...` : graphNode.title;
+              const label = graphNode.title.length > 18 ? `${graphNode.title.slice(0, 18)}...` : graphNode.title;
               const fontSize = Math.max(9, 12 / globalScale);
               const x = graphNode.x ?? 0;
               const y = graphNode.y ?? 0;
-              ctx.fillStyle = graphNode.color;
+              const radius = 5 + (graphNode.connectionCount * 0.8);
+
+              // Extract hue to create variations
+              const hueMatch = graphNode.color.match(/\d+/);
+              const hue = hueMatch ? hueMatch[0] : 250;
+
+              // Node Glow & Glass Fill
+              ctx.shadowColor = `hsla(${hue}, 70%, 60%, 0.5)`;
+              ctx.shadowBlur = 10;
+              ctx.fillStyle = `hsla(${hue}, 60%, 50%, 0.15)`;
               ctx.beginPath();
-              ctx.arc(x, y, 6 + graphNode.connectionCount, 0, 2 * Math.PI);
+              ctx.arc(x, y, radius, 0, 2 * Math.PI);
               ctx.fill();
+
+              // Node Border
+              ctx.shadowBlur = 0;
+              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = `hsla(${hue}, 70%, 65%, 0.8)`;
+              ctx.stroke();
+
+              // Label Pill
               ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
-              ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
-              ctx.textAlign = 'right';
-              ctx.fillText(label, x - 12, y + 4);
+              const textWidth = ctx.measureText(label).width;
+              const pillWidth = textWidth + 12;
+              const pillHeight = fontSize + 8;
+              const pillX = x + radius + 4; // place on the right of the node
+              const pillY = y - pillHeight / 2;
+              const r = pillHeight / 2;
+
+              // Draw pill shape (safe for older WebViews)
+              ctx.fillStyle = 'rgba(15, 12, 24, 0.85)';
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(pillX + r, pillY);
+              ctx.lineTo(pillX + pillWidth - r, pillY);
+              ctx.arc(pillX + pillWidth - r, pillY + r, r, -Math.PI / 2, Math.PI / 2);
+              ctx.lineTo(pillX + r, pillY + pillHeight);
+              ctx.arc(pillX + r, pillY + r, r, Math.PI / 2, -Math.PI / 2);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+
+              // Draw Text
+              ctx.fillStyle = 'rgba(240, 240, 245, 0.95)';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(label, pillX + pillWidth / 2, y + 0.5);
             }}
           />
         )}

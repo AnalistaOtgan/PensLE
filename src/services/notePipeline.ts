@@ -49,7 +49,12 @@ export function canProcessNoteLater(note: Note): boolean {
   return Boolean(note.audioDataUrl || hasUsableRawTranscript(note.rawTranscript));
 }
 
-export async function processRecording(audioBlob: Blob, audioUrl: string, settings: AppSettings): Promise<ProcessResult> {
+export async function processRecording(
+  audioBlob: Blob,
+  audioUrl: string,
+  settings: AppSettings,
+  defaultTags?: string[]
+): Promise<ProcessResult> {
   let rawTranscript = '';
   let usedFallback = false;
   let message = 'Nota criada com IA.';
@@ -110,10 +115,12 @@ export async function processRecording(audioBlob: Blob, audioUrl: string, settin
     strength: candidate.strength,
     createdAt
   }));
+  const finalTags = Array.from(new Set([...(defaultTags || []), ...aiResult.tags]));
+
   const markdown = createMarkdownDocument({
     title: aiResult.title,
     summary: aiResult.summary,
-    tags: aiResult.tags,
+    tags: finalTags,
     createdAt,
     treatedBody: aiResult.body,
     rawTranscript
@@ -126,7 +133,7 @@ export async function processRecording(audioBlob: Blob, audioUrl: string, settin
     body: aiResult.body,
     rawTranscript,
     markdown,
-    tags: aiResult.tags,
+    tags: finalTags,
     connections,
     audioUrl: settings.keepAudio ? audioUrl : undefined,
     audioDataUrl,
